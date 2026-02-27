@@ -1,0 +1,237 @@
+---
+title: High Dimensional Working group
+author: Haoyu Ji
+institute: Department of Biostatistics, University of Minnesota
+format:
+  revealjs:
+    theme: 
+      # - ../pre_style.scss
+      - serif
+    slide-number: true
+    self-contained: true
+---
+
+# Sparse sliced inverse regression for high dimensional data analysis
+
+## Semi-parametric multi-index model {.smaller}
+
+$$
+Y = g\!\left(v_1^\top X, \ldots, v_d^\top X, \varepsilon\right), \qquad d \ll p
+$$
+
+- $Y$: response
+
+- $X \in \mathbb{R}^p$: p features
+
+- $v_1^\top X, \ldots, v_d^\top X$: Unknown directions
+
+- $g(.)$: link function
+
+Y's dependence on X is determined only through d linear projections $v_j^\top X$.
+
+Equivantly, $Y \perp\!\!\!\perp X \,\big|\, \left(v_1^\top X, \ldots, v_d^\top X\right)$
+
+## Central subspace {.smaller}
+
+Given $V = (v_1, \ldots, v_d) \in \mathbb{R}^{p \times d}$, span(V) is one subspace in d dimension.
+
+$$
+\text{Central subspace }S_{Y\mid X} \text{: } Y \perp\!\!\!\perp X \,\big|\, P_{S}X \text{, with the smallest dimension}
+$$
+
+A **population seed** is any matrix $\Gamma$ such that
+$$
+\operatorname{span}(\Gamma)\subseteq S_{Y\mid X},
+$$
+ideally covering the whole central subspace.
+
+In this paper we assume the **coverage condition**
+$$
+\operatorname{span}(\Gamma)=S_{Y\mid X},
+$$
+meaning the seed contains all directions of the central subspace.
+
+If $\Sigma=\operatorname{cov}(X)$ is invertible, we can recover a basis matrix by
+$$
+V=\Sigma^{-1}\Gamma,
+\qquad\Rightarrow\qquad
+\operatorname{span}(V)=S_{Y\mid X}.
+$$
+
+## Sliced inverse regression (SIR) {.smaller}
+
+Under linearity condition, $\mathbb{E}(X \mid V^\top X)$ is the linear function of $V^\top X$, we have
+$$
+\forall y,\quad \mathbb{E}(X \mid Y = y) - \mathbb{E}(X) \in \Sigma S_{Y\mid X},\qquad \Sigma = \operatorname{cov}(X)
+$$
+
+Let $M = \operatorname{cov}\!\big(\mathbb{E}(X \mid Y) - \mathbb{E}(X)\big)$. The kernel matrix M of SIR degenerates in a direction "Sigma-orthogonal" to $v_j$, we can use generalized eigenvalue decomposition $M v_j = \lambda_j\, \Sigma v_j$, equivalent to reconstructing the central subspace by looking at the eigenvectors of $Σ^{-1}M$: the d eigenvectors corresponding to non-zero eigenvalues ​​span $S_{Y\mid X}$.
+
+Calculating $\mathbb{E}(X \mid Y = y)$ directly for consecutive values ​​of Y is impractical. Therefore, the range of Y is divided into H slices, and the sample mean of X within each slice is used to approximate the conditional expectation. This allows us to construct sample estimates of $\hat{M}$ and $\hat{\Sigma}$ of M.
+
+## Slicing practical seed matrix {.smaller .scrollable}
+
+For continuous $Y$, conditioning on each exact value $y$ is impractical, so we use **slicing**:
+
+- Partition $Y$ into $H$ slices.
+- Define the indicator $J_h(Y)=1$ if $Y$ falls in slice $h$, otherwise $0$.
+
+Define the inverse regression mean shift for each slice:
+$$
+\psi_h=\mathbb{E}\!\left(X\mid J_h(Y)=1\right)-\mathbb{E}(X),
+\qquad h=1,\ldots,H.
+$$
+
+By slicing (averaging) the population relation, we still have
+$$
+\psi_h\in S_{Y\mid X}.
+$$
+
+Stack them into a matrix
+$$
+\Psi=(\psi_1,\ldots,\psi_H)\in\mathbb{R}^{p\times H},
+$$
+so
+$$
+\operatorname{span}(\Psi)\subseteq S_{Y\mid X}.
+$$
+Under the coverage condition, $\Psi$ serves as a seed matrix.
+
+More generally, inverse regression SDR methods construct a method-specific kernel matrix $M$
+that degenerates on the orthogonal complement of $S_{Y\mid X}$, and recover $S_{Y\mid X}$
+from the nonzero eigenspace of $M$.
+
+## Sample estimates of $\hat\Sigma$ and $\hat M$ {.smaller .scrollable}
+
+Given i.i.d. samples $\{(x_i^\top,y_i)\}_{i=1}^n$, partition $Y$ into $H$ slices with indicators $J_h(y_i)\in\{0,1\}$, and let $n_h=\sum_{i=1}^n \mathbf{1}\{J_h(y_i)=1\}$.
+
+Overall mean:
+$$
+\bar{x}=\frac{1}{n}\sum_{i=1}^n x_i .
+$$
+
+Slice mean:
+$$
+\bar{x}_h=\frac{1}{n_h}\sum_{i:J_h(y_i)=1} x_i,\qquad h=1,\ldots,H .
+$$
+
+Sample covariance:
+$$
+\hat{\Sigma}=\frac{1}{n}\sum_{i=1}^n (x_i-\bar{x})(x_i-\bar{x})^\top .
+$$
+
+SIR kernel matrix estimate (weighted outer products of slice mean shifts):
+$$
+\hat{M}=\sum_{h=1}^H \frac{n_h}{n}\,(\bar{x}_h-\bar{x})(\bar{x}_h-\bar{x})^\top .
+$$
+
+## Non-sparse SIR directions {.smaller}
+
+When $p<n$ and $\hat{\Sigma}$ is invertible, form the whitened kernel matrix
+$$
+\hat{A}=\hat{\Sigma}^{-1/2}\hat{M}\hat{\Sigma}^{-1/2}.
+$$
+
+Take the $d$ non-zero eigenvalues of $\hat{A}$ into a diagonal matrix $\tilde{\Lambda}$, and let $\tilde{V}\in\mathbb{R}^{p\times d}$ be the corresponding (non-sparse) eigenvectors (mapped back to the original scale if desired).
+
+These directions span an estimate of $S_{Y\mid X}$, but typically involve (nearly) all predictors.
+
+## Pain point in classical SDR (sufficient dimension reduction) {.smaller}
+
+Classical SDR methods produce sufficient predictors
+$$
+v_1^\top X,\ \ldots,\ v_d^\top X,
+$$
+but typically each direction vector $v_j$ is **nearly dense**, i.e., a linear combination of (almost) all predictors.
+
+Consequences:
+
+- Important predictors are hard to identify → poor interpretability.
+
+- Estimation/prediction may be less efficient than methods that also perform variable selection.
+
+- In omics-style settings ($p\gg n$), many noise predictors can harm generalization.
+
+This motivates **sparse SDR**: construct sufficient predictors as linear combinations of only a small subset of important variables.
+
+## Coordinate-independent sparse SIR via convex optimization {.smaller .scrollable}
+
+To achieve simultaneous dimension reduction and variable selection, estimate a row-sparse basis matrix $V\in\mathbb{R}^{p\times d}$ by
+$$
+\hat{V}
+=
+\arg\min_{V\in\mathbb{R}^{p\times d}}
+\sum_{i=1}^p \|v_i\|_2
+\quad\text{s.t.}\quad
+\left\|
+\hat{\Sigma}^{-1/2}\hat{M}\hat{\Sigma}^{-1/2}\tilde{V}
+-
+V\tilde{\Lambda}
+\right\|_\infty
+\le \tau,
+\tag{4}
+$$
+where $v_i$ is the $i$-th row of $V$.
+
+- Objective $\sum_i \|v_i\|_2$ is a block-$\ell_1$ (group) penalty → induces **row sparsity** (predictor-level selection).
+- Constraint is Dantzig-selector style ($\ell_\infty$) control of deviation from the eigen-structure.
+- $\tau>0$ controls sparsity: larger $\tau$ → looser constraint → more rows shrink to zero.
+
+The optimizer $\hat V$ need not be orthogonal; an orthogonal sparse basis can be obtained via Gram–Schmidt on $\hat V$.
+
+## Why row-sparsity is coordinate-independent {.smaller}
+
+Row-sparsity selects predictors based on their contribution across all $d$ directions simultaneously.
+
+For any orthogonal $O\in\mathbb{R}^{d\times d}$,
+$$
+\|(VO)_{i\cdot}\|_2=\|V_{i\cdot}O\|_2=\|V_{i\cdot}\|_2,
+$$
+so the set of zero rows is unchanged under the rotation $V\mapsto VO$.
+
+This matches SDR geometry: the **subspace** is identifiable, while the **basis vectors** are not unique.
+
+## High-dimensional case $p>n$: estimating $\Sigma^{-1}$ (CLIME) {.smaller .scrollable}
+
+When $p>n$, $\hat{\Sigma}$ is singular and $\hat{\Sigma}^{-1/2}$ is not well-defined.  
+Introduce the precision matrix $\Omega=\Sigma^{-1}$ and estimate it by CLIME:
+
+$$
+\hat{\Omega}
+=
+\arg\min_{\Omega}\|\Omega\|_1
+\quad\text{s.t.}\quad
+\|\hat{\Sigma}\Omega-I\|_\infty \le \lambda_n .
+$$
+
+$\hat{\Omega}$ is not necessarily symmetric; define a symmetric version $\hat{\Omega}^{\,s}$ by setting, for each $(k,l)$,
+$$
+\hat{\Omega}^{\,s}_{kl}=\hat{\Omega}^{\,s}_{lk}
+=
+\hat{\Omega}_{kl}\,\mathbf{1}\{|\hat{\Omega}_{kl}|\le |\hat{\Omega}_{lk}|\}
++
+\hat{\Omega}_{lk}\,\mathbf{1}\{|\hat{\Omega}_{kl}|> |\hat{\Omega}_{lk}|\}.
+$$
+
+With $\lambda_n \asymp \sqrt{\log(p)/n}$ under suitable tail/sparsity conditions, $\hat{\Omega}^{\,s}$ is consistent and (with high probability) positive definite, enabling stable construction of $\tilde V$ and the constraint in (4).
+
+## Sparsity and the order of $\tau$ in high dimension {.smaller}
+
+Assume the true direction matrix $V$ is row-sparse with support
+$$
+F=\{i:\|v_i\|_2\neq 0,\ i=1,\ldots,p\},\qquad |F|=s.
+$$
+
+A typical high-dimensional choice is
+$$
+\tau = O\!\left(s\sqrt{\frac{\log p}{n}}\right),
+$$
+reflecting that allowable deviation grows with sparsity level $s$ and the high-dimensional complexity term $\sqrt{\log p/n}$.
+
+## Workflow summary {.smaller}
+
+- Slice $Y$ into $H$ groups ($H\ge d$ for continuous $Y$).
+- Compute $\hat{\Sigma}$ and $\hat{M}$ from slice means.
+- Obtain a reasonable non-sparse reference $(\tilde V,\tilde\Lambda)$ (classical via $\hat{\Sigma}^{-1/2}\hat{M}\hat{\Sigma}^{-1/2}$; high-dimensional via $\hat\Omega$-based stabilization).
+- Solve the convex program for $\hat V(\tau)$ to get row-sparse directions.
+- Optionally orthogonalize $\hat V(\tau)$ to form a sparse basis for $S_{Y\mid X}$.
